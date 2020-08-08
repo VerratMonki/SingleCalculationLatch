@@ -15,6 +15,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	private CachingVeto<K, V> veto;
 	private volatile boolean stop = false;
 	private long sleepBeforeDelete = DEFAULT_SLEEP_DELETE;
+	
 	private Thread cleaner = new Thread(() -> {
 		LOG.info("Cache cleaner [{}] started", cache.getName());
 		while (!stop) {
@@ -24,6 +25,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	});
 	
 	void removeAllExpired() {
+		LOG.debug("Running clearing expired elements in cache: {}", cache.getName());
 		for(Map.Entry<K, SimpleFuture<K, V, E>> entry :  cache.getEntries()) {
 			try {
 				TimeUnit.MILLISECONDS.sleep(sleepBeforeDelete);
@@ -33,7 +35,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 				Thread.currentThread().interrupt();
 				break;
 			} catch (Exception ex) {
-				LOG.error("Could not clear cache", ex);
+				LOG.error("Could not clear cache entry with key: {}", entry.getKey(), ex);
 			}
 		}
 	}
@@ -45,6 +47,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		K key = entry.getKey();
 		if (veto == null || veto.removeAllowed(key, entry.getValue().get(key, veto))) {
 			cache.remove(key);
+			LOG.trace("Element with key: {} is remode from cache: {}", key, cache.getName());
 		}
 	}
 	
@@ -59,6 +62,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		SimpleFuture<K, V, E> newFuture = new SimpleFuture<> (valueProvider);
 		SimpleFuture<K, V, E> future = cache.putIfAbsent(key, newFuture);
 		if (future == null) {
+			LOG.trace("New cache item is being created and put into cache: {} with key: {}", cache.getName(), key);
 			future = newFuture;
 		}
 		V result = future.get(key, veto);
@@ -77,10 +81,15 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		if (veto == null) {
 			throw new IllegalArgumentException();
 		}
+		LOG.debug("Vetoing {} is set for cache {}", veto.getClass().getCanonicalName(), cache.getName());
 		this.veto = veto;
 	}
 	
 	public void setSleepBeforeDelete(final long sleepBeforeDelete) {
-		this.sleepBeforeDelete = sleepBeforeDelete;
+		if (sleepBeforeDelete > 0) {
+			LOG.debug("Sleeping period between removing is set to: {} for cache: {}",
+					sleepBeforeDelete, cache.getName());
+			this.sleepBeforeDelete = sleepBeforeDelete;
+		}
 	}
 }
