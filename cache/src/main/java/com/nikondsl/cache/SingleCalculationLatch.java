@@ -55,7 +55,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		cleaner.start();
 	}
 	
-	V get(K key) throws E {
+	public V get(K key) throws E {
 		SimpleFuture<K, V, E> newFuture = new SimpleFuture<> (valueProvider);
 		SimpleFuture<K, V, E> future = cache.putIfAbsent(key, newFuture);
 		if (future == null) {

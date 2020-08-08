@@ -1,4 +1,7 @@
-package com.nikondsl.cache;
+import com.nikondsl.cache.CacheProvider;
+import com.nikondsl.cache.SimpleFuture;
+import com.nikondsl.cache.SingleCalculationLatch;
+import com.nikondsl.cache.ValueProvider;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

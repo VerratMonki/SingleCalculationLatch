@@ -44,4 +44,8 @@ public class SimpleFuture<K, V, E extends Exception> {
 	public boolean isExpired() {
 		return System.currentTimeMillis() - timeToLive > valueProvider.getTimeToLive();
 	}
+	
+	void setException(final E exception) {
+		this.exception = exception;
+	}
 }
