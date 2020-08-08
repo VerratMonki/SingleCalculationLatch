@@ -16,8 +16,12 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -105,7 +109,7 @@ public class SingleCalculationLatchTest {
 	}
 	
 	@Test
-	public void testVeto() throws Exception {
+	public void testVetoExpire() throws Exception {
 		CachingVeto<String, Integer> veto = new CachingVeto<String, Integer>() {
 			@Override
 			public boolean removeAllowed(String key, Integer value) {
@@ -126,6 +130,39 @@ public class SingleCalculationLatchTest {
 		
 		TimeUnit.MILLISECONDS.sleep(25);
 		verify(cacheProvider, never()).remove("zero");
+	}
+	
+	@Test
+	public void testVetoPut() throws Exception {
+		CachingVeto<String, Integer> veto = new CachingVeto<String, Integer>() {
+			@Override
+			public boolean removeAllowed(String key, Integer value) {
+				return false;
+			}
+			
+			@Override
+			public boolean expireAllowed(String key, Integer value) {
+				return false;
+			}
+			
+			@Override
+			public boolean putInCasheAllowed(String key, Integer value) {
+				return false;
+			}
+		};
+		latch.setSleepBeforeDelete(1);
+		latch.setVeto(veto);
+		assertEquals(4, (int)latch.get("zero"));
+		latch.stop();
+		
+		TimeUnit.MILLISECONDS.sleep(25);
+		
+		SimpleFuture<String, Integer, Exception> zero = cacheProvider.get("zero");
+		assertNotNull(zero);
+		assertTrue(zero.isDone());
+		assertTrue(zero.isExpired());
+		assertEquals(4, (int)zero.get("zero", null));
+		verify(valueProvider, times(2)).createValue("zero");
 	}
 	
 	@Test

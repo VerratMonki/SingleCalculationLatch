@@ -4,6 +4,7 @@ public class SimpleFuture<K, V, E extends Exception> {
 	private long timeToLive = 0L;
 	private V value;
 	private E exception;
+	boolean done = false;
 	private ValueProvider<K, V, E> valueProvider;
 	
 	public SimpleFuture(ValueProvider<K, V, E> valueProvider) {
@@ -23,12 +24,13 @@ public class SimpleFuture<K, V, E extends Exception> {
 		boolean expired = isExpired() && (veto == null || veto.expireAllowed(key, value));
 		if (!isDone() || expired) {
 			constructValue(key);
+			done = true;
 		}
 		return value;
 	}
 	
 	public boolean isDone() {
-		return value != null || exception != null;
+		return done;
 	}
 	
 	void constructValue(K key) throws E {
@@ -47,5 +49,9 @@ public class SimpleFuture<K, V, E extends Exception> {
 	
 	void setException(final E exception) {
 		this.exception = exception;
+	}
+	
+	void setValue(V value) {
+		this.value = value;
 	}
 }

@@ -73,4 +73,16 @@ public class SimpleFutureTest {
 			new SimpleFuture<>(null);
 		});
 	}
+	
+	@Test
+	public void testIsExpired() {
+		assertTrue(future.isExpired());
+	}
+	
+	@Test
+	public void testIsExpiredShouldCheck() {
+		doReturn(Long.MAX_VALUE).when(valueProvider).getTimeToLive();
+		
+		assertFalse(future.isExpired());
+	}
 }

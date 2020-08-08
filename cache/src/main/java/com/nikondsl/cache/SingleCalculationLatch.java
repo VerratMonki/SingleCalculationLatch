@@ -61,7 +61,11 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		if (future == null) {
 			future = newFuture;
 		}
-		return future.get(key, veto);
+		V result = future.get(key, veto);
+		if (veto != null && !veto.putInCasheAllowed(key, result)) {
+			future.setValue(null);
+		}
+		return result;
 	}
 	
 	public void stop() {
