@@ -1,5 +1,6 @@
 package com.nikondsl.cache;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,6 +11,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,6 +27,17 @@ public class SingleCalculationLatchTest {
 	private SingleCalculationLatch<String, Integer, Exception> latch;
 	private CacheProvider<String, SimpleFuture<String, Integer, Exception>> cacheProvider;
 	private ValueProvider<String, Integer, Exception> valueProvider;
+	public static final CachingVeto<String, Integer> NO_EXPIRE_VETO = new CachingVeto<String, Integer>() {
+		@Override
+		public boolean removeAllowed(String key, Integer value) {
+			return false;
+		}
+		
+		@Override
+		public boolean expireAllowed(String key, Integer value) {
+			return false;
+		}
+	};
 	
 	@BeforeEach
 	public void setUp() {
@@ -68,6 +82,27 @@ public class SingleCalculationLatchTest {
 			}
 		});
 		latch = spy(new SingleCalculationLatch(cacheProvider, valueProvider));
+		latch.setSleepBeforeDelete(10_000L);
+	}
+	
+	@Test
+	public void testVetoException() throws Exception {
+		CachingVeto<String, Integer> veto = new CachingVeto<String, Integer>() {
+			@Override
+			public boolean removeAllowed(String key, Integer value) {
+				return false;
+			}
+			
+			@Override
+			public boolean expireAllowed(String key, Integer value) {
+				return false;
+			}
+		};
+		latch.setSleepBeforeDelete(1);
+		
+		assertThrows(IllegalArgumentException.class, () -> {
+			latch.setVeto(null);
+		});
 	}
 	
 	@Test
@@ -106,5 +141,44 @@ public class SingleCalculationLatchTest {
 		
 		TimeUnit.MILLISECONDS.sleep(25);
 		verify(cacheProvider).remove("zero");
+	}
+	
+	@Test
+	public void testThreadShouldWaitWhileCalculates() throws Exception {
+		latch.setVeto(NO_EXPIRE_VETO);
+		ExecutorService service = Executors.newFixedThreadPool(3);
+		long time =System.currentTimeMillis();
+		Exception[] exceptions = new Exception[1];
+		service.submit(()-> {
+			try {
+				latch.get("abc");
+			} catch (Exception e) {
+				exceptions[0] = e;
+			}
+		});
+		service.submit(()-> {
+			try {
+				latch.get("abc");
+			} catch (Exception e) {
+				exceptions[0] = e;
+			}
+		});
+		service.submit(()-> {
+			try {
+				latch.get("abc");
+			} catch (Exception e) {
+				exceptions[0] = e;
+			}
+		});
+		
+		service.shutdown();
+		service.awaitTermination(1, TimeUnit.SECONDS);
+		
+		assertEquals(3, (int)latch.get("abc"));
+		assertNull(exceptions[0]);
+		
+		verify(valueProvider).createValue("abc");
+		
+		latch.stop();
 	}
 }

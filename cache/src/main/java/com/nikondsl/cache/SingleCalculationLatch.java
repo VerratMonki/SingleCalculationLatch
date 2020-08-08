@@ -1,9 +1,13 @@
 package com.nikondsl.cache;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class SingleCalculationLatch<K, V, E extends Exception> {
+	private static Logger LOG = LoggerFactory.getLogger(SingleCalculationLatch.class);
 	private static long DEFAULT_SLEEP_DELETE = 30_000L;
 	
 	private CacheProvider<K, SimpleFuture<K, V, E>> cache;
@@ -12,9 +16,11 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	private volatile boolean stop = false;
 	private long sleepBeforeDelete = DEFAULT_SLEEP_DELETE;
 	private Thread cleaner = new Thread(() -> {
+		LOG.info("Cache cleaner [{}] started", cache.getName());
 		while (!stop) {
 			removeAllExpired();
 		}
+		LOG.info("Cache cleaner [{}] stopped", cache.getName());
 	});
 	
 	void removeAllExpired() {
@@ -27,17 +33,18 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 				Thread.currentThread().interrupt();
 				break;
 			} catch (Exception ex) {
-				//@ToDo fixme
+				LOG.error("Could not clear cache", ex);
 			}
 		}
 	}
 	
 	private void removeElement(Map.Entry<K, SimpleFuture<K, V, E>> entry) throws E {
-		if (entry != null && entry.getValue().isDone() && entry.getValue().isExpired()) {
-			K key = entry.getKey();
-			if (veto == null || veto.removeAllowed(key, entry.getValue().get(key, veto))) {
-				cache.remove(key);
-			}
+		if (entry == null || !entry.getValue().isDone() || !entry.getValue().isExpired()) {
+			return;
+		}
+		K key = entry.getKey();
+		if (veto == null || veto.removeAllowed(key, entry.getValue().get(key, veto))) {
+			cache.remove(key);
 		}
 	}
 	
@@ -55,10 +62,6 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 			future = newFuture;
 		}
 		return future.get(key, veto);
-	}
-	
-	V create(K key) throws E {
-		return valueProvider.createValue(key);
 	}
 	
 	public void stop() {

@@ -31,7 +31,7 @@ public class SimpleFuture<K, V, E extends Exception> {
 		return value != null || exception != null;
 	}
 	
-	private void constructValue(K key) throws E {
+	void constructValue(K key) throws E {
 		timeToLive = System.currentTimeMillis();
 		try{
 			value = valueProvider.createValue(key);
