@@ -2,7 +2,7 @@ package com.nikondsl.cache;
 
 public class SimpleFuture<K, V, E extends Exception> {
 	private long timeToLive = 0L;
-	private V value;
+	private Reference<V> value;
 	private E exception;
 	boolean done = false;
 	private ValueProvider<K, V, E> valueProvider;
@@ -21,12 +21,12 @@ public class SimpleFuture<K, V, E extends Exception> {
 		if (exception != null) {
 			throw exception;
 		}
-		boolean expired = isExpired() && (veto == null || veto.expireAllowed(key, value));
+		boolean expired = isExpired() && (veto == null || value == null || veto.expireAllowed(key, value.getValue()));
 		if (!isDone() || expired) {
 			constructValue(key);
 			done = true;
 		}
-		return value;
+		return value.getValue();
 	}
 	
 	public boolean isDone() {
@@ -36,7 +36,7 @@ public class SimpleFuture<K, V, E extends Exception> {
 	void constructValue(K key) throws E {
 		timeToLive = System.currentTimeMillis();
 		try{
-			value = valueProvider.createValue(key);
+			setValue(valueProvider.createValue(key));
 		} catch (Exception exception) {
 			this.exception = (E) exception;
 			throw exception;
@@ -52,6 +52,58 @@ public class SimpleFuture<K, V, E extends Exception> {
 	}
 	
 	void setValue(V value) {
-		this.value = value;
+		switch (valueProvider.getReferenceType()) {
+			case STRONG:
+				this.value = new StrongReference(value);
+				return;
+			case WEAK:
+				this.value = new WeakReference(value);
+				return;
+			default:
+				this.value = new SoftReference<>(value);
+		}
+	}
+	
+	interface Reference<T>{
+		T getValue();
+	}
+	
+	static class StrongReference<T> implements Reference<T> {
+		private T value;
+		
+		public StrongReference(T value) {
+			this.value = value;
+		}
+		
+		@Override
+		public T getValue() {
+			return value;
+		}
+	}
+	
+	static class SoftReference<T> implements Reference<T> {
+		private java.lang.ref.SoftReference<T> value;
+		
+		public SoftReference(T value) {
+			this.value = new java.lang.ref.SoftReference<>(value);
+		}
+		
+		@Override
+		public T getValue() {
+			return value.get();
+		}
+	}
+	
+	static class WeakReference<T> implements Reference<T> {
+		private java.lang.ref.WeakReference<T> value;
+		
+		public WeakReference(T value) {
+			this.value = new java.lang.ref.WeakReference<>(value);
+		}
+		
+		@Override
+		public T getValue() {
+			return value.get();
+		}
 	}
 }

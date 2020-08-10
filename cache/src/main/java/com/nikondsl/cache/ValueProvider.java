@@ -24,4 +24,8 @@ public interface ValueProvider<K, V, E extends Throwable> {
 	default long getTimeToLive() {
 		return TimeUnit.SECONDS.toMillis(1L);
 	}
+	
+	default ReferenceType getReferenceType() {
+		return ReferenceType.STRONG;
+	}
 }
