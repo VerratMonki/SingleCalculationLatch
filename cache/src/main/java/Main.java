@@ -1,4 +1,5 @@
 import com.nikondsl.cache.CacheProvider;
+import com.nikondsl.cache.ReferenceType;
 import com.nikondsl.cache.SimpleFuture;
 import com.nikondsl.cache.SingleCalculationLatch;
 import com.nikondsl.cache.ValueProvider;
@@ -52,6 +53,11 @@ public class Main {
             @Override
             public long getTimeToLive() {
                 return 5_000L;
+            }
+    
+            @Override
+            public ReferenceType getReferenceType() {
+                return ReferenceType.STRONG;
             }
         };
         

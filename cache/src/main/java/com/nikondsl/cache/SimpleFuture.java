@@ -1,11 +1,17 @@
 package com.nikondsl.cache;
 
+import java.lang.ref.Reference;
+import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 public class SimpleFuture<K, V, E extends Exception> {
-	private long timeToLive = 0L;
-	private Reference<V> value;
-	private E exception;
-	boolean done = false;
-	private ValueProvider<K, V, E> valueProvider;
+	private volatile long createdTime = System.currentTimeMillis();
+	private volatile Reference<V> value;
+	private volatile E exception;
+	volatile boolean done = false;
+	private final ValueProvider<K, V, E> valueProvider;
+	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	
 	public SimpleFuture(ValueProvider<K, V, E> valueProvider) {
 		if (valueProvider == null) {
@@ -14,19 +20,38 @@ public class SimpleFuture<K, V, E extends Exception> {
 		this.valueProvider = valueProvider;
 	}
 	
-	public synchronized V get(K key, CachingVeto<K, V> veto) throws E {
+	/**
+	 * Returns a calculated value if it's presented or calculate it and return.
+	 * NOTE: synchronization here is needed to provide access to calculation for only single thread.
+	 * @param key
+	 * @param veto
+	 * @return
+	 * @throws E
+	 */
+	public V get(K key, CachingVeto<K, V> veto) throws E {
 		if (key == null) {
 			throw new IllegalArgumentException();
 		}
 		if (exception != null) {
 			throw exception;
 		}
-		boolean expired = isExpired() && (veto == null || value == null || veto.expireAllowed(key, value.getValue()));
-		if (!isDone() || expired) {
+		try{
+			lock.readLock().lock();
+			boolean expired = isExpired() && (veto == null || value == null || veto.expireAllowed(key, value.getValue()));
+			if (isDone() && !expired) {
+				return value.getValue();
+			}
+		} finally {
+			lock.readLock().unlock();
+		}
+		try {
+			lock.writeLock().lock();
 			constructValue(key);
 			done = true;
+			return value.getValue();
+		} finally {
+			lock.writeLock().unlock();
 		}
-		return value.getValue();
 	}
 	
 	public boolean isDone() {
@@ -34,7 +59,7 @@ public class SimpleFuture<K, V, E extends Exception> {
 	}
 	
 	void constructValue(K key) throws E {
-		timeToLive = System.currentTimeMillis();
+		createdTime = System.currentTimeMillis();
 		try{
 			setValue(valueProvider.createValue(key));
 		} catch (Exception exception) {
@@ -44,7 +69,11 @@ public class SimpleFuture<K, V, E extends Exception> {
 	}
 	
 	public boolean isExpired() {
-		return System.currentTimeMillis() - timeToLive > valueProvider.getTimeToLive();
+		if (isDone() || exception != null) {
+			long remain = System.currentTimeMillis() - createdTime;
+			return remain > valueProvider.getTimeToLive();
+		}
+		return true;
 	}
 	
 	void setException(final E exception) {
