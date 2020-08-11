@@ -77,6 +77,8 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	public void stop() {
 		this.stop = true;
 		cleaner.interrupt();
+		LOG.error("Final cache '{}' stat: {}/{}/{} (hit/miss/error)",
+				cache.getName(), statistics.getHits(), statistics.getMisses(), statistics.getErrors());
 	}
 	
 	public void setVeto(final CachingVeto<K, V> veto) {

@@ -9,13 +9,28 @@ public class SimpleCacheStatistics {
 	private AtomicInteger vetoPut = new AtomicInteger();
 	private AtomicInteger vetoRemove = new AtomicInteger();
 	private AtomicInteger vetoExpire = new AtomicInteger();
+	
 	public void hit() {
 		hits.incrementAndGet();
 	}
+	
 	public void miss() {
 		misses.incrementAndGet();
 	}
+	
 	public void error() {
 		errors.incrementAndGet();
+	}
+	
+	public int getHits() {
+		return this.hits.get();
+	}
+	
+	public int getMisses() {
+		return this.misses.get();
+	}
+	
+	public int getErrors() {
+		return this.errors.get();
 	}
 }

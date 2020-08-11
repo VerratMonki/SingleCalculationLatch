@@ -69,70 +69,70 @@ public class Main {
         long time =System.currentTimeMillis();
         service.submit(()-> {
             try {
-                System.out.println("abc="+latch.get("abc"));
+                System.out.println("1. abc="+latch.get("abc"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
         service.submit(()-> {
             try {
-                System.out.println("abcde="+latch.get("abcde"));
+                System.out.println("2. abcde="+latch.get("abcde"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
         service.submit(()-> {
             try {
-                System.out.println("abcde="+latch.get("abcde"));
+                System.out.println("3. abcde="+latch.get("abcde"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
         service.submit(()-> {
             try {
-                System.out.println("ab="+latch.get("ab"));
+                System.out.println("4. ab="+latch.get("ab"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
         service.submit(()-> {
             try {
-                System.out.println("abc="+latch.get("abc"));
+                System.out.println("5. abc="+latch.get("abc"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
         service.submit(()-> {
             try {
-                System.out.println("abc="+latch.get("abc"));
+                System.out.println("6. abc="+latch.get("abc"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
         service.submit(()-> {
             try {
-                System.out.println("abc="+latch.get("abc"));
+                System.out.println("7. abc="+latch.get("abc"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
         service.submit(()-> {
             try {
-                System.out.println("abc="+latch.get("abc"));
+                System.out.println("8. abc="+latch.get("abc"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
         service.submit(()-> {
             try {
-                System.out.println("ab="+latch.get("ab"));
+                System.out.println("9. ab="+latch.get("ab"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
         service.submit(()-> {
             try {
-                System.out.println("abcde="+latch.get("abcde"));
+                System.out.println("10.abcde="+latch.get("abcde"));
             } catch (Exception e) {
                 e.printStackTrace();
             }
