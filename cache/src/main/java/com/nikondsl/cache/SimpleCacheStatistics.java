@@ -6,9 +6,7 @@ public class SimpleCacheStatistics {
 	private AtomicInteger hits = new AtomicInteger();
 	private AtomicInteger misses = new AtomicInteger();
 	private AtomicInteger errors = new AtomicInteger();
-	private AtomicInteger vetoPut = new AtomicInteger();
-	private AtomicInteger vetoRemove = new AtomicInteger();
-	private AtomicInteger vetoExpire = new AtomicInteger();
+	private AtomicInteger removes = new AtomicInteger();
 	
 	public void hit() {
 		hits.incrementAndGet();
@@ -22,6 +20,10 @@ public class SimpleCacheStatistics {
 		errors.incrementAndGet();
 	}
 	
+	public void remove() {
+		removes.incrementAndGet();
+	}
+	
 	public int getHits() {
 		return this.hits.get();
 	}
@@ -32,5 +34,13 @@ public class SimpleCacheStatistics {
 	
 	public int getErrors() {
 		return this.errors.get();
+	}
+	
+	public int getRemoves() {
+		return removes.get();
+	}
+	
+	public int ratio() {
+		return (int) (100.0 * getHits() / (getHits() + getMisses() + getErrors()));
 	}
 }

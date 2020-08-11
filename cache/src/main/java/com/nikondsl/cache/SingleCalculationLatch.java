@@ -48,7 +48,8 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		K key = entry.getKey();
 		if (veto == null || veto.removeAllowed(key, entry.getValue().get(key, veto, statistics))) {
 			cache.remove(key);
-			LOG.trace("Element with key: {} is remode from cache: {}", key, cache.getName());
+			statistics.remove();
+			LOG.trace("Element with key: {} is removed from cache: {}", key, cache.getName());
 		}
 	}
 	
@@ -77,8 +78,11 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	public void stop() {
 		this.stop = true;
 		cleaner.interrupt();
-		LOG.error("Final cache '{}' stat: {}/{}/{} (hit/miss/error)",
-				cache.getName(), statistics.getHits(), statistics.getMisses(), statistics.getErrors());
+		LOG.error("Final cache '{}' ratio: {} %, {}/{}/{}/{} (hit/miss/error/removed)",
+				cache.getName(),
+				statistics.ratio(),
+				statistics.getHits(), statistics.getMisses(), statistics.getErrors(),
+				statistics.getRemoves());
 	}
 	
 	public void setVeto(final CachingVeto<K, V> veto) {
