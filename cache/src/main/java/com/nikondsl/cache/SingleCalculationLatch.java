@@ -15,6 +15,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	private CachingVeto<K, V> veto;
 	private volatile boolean stop = false;
 	private long sleepBeforeDelete = DEFAULT_SLEEP_DELETE;
+	private SimpleCacheStatistics statistics = new SimpleCacheStatistics();
 	
 	private Thread cleaner = new Thread(() -> {
 		LOG.info("Cache cleaner [{}] started", cache.getName());
@@ -45,7 +46,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 			return;
 		}
 		K key = entry.getKey();
-		if (veto == null || veto.removeAllowed(key, entry.getValue().get(key, veto))) {
+		if (veto == null || veto.removeAllowed(key, entry.getValue().get(key, veto, statistics))) {
 			cache.remove(key);
 			LOG.trace("Element with key: {} is remode from cache: {}", key, cache.getName());
 		}
@@ -65,7 +66,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 			LOG.trace("New cache item is being created and put into cache: {} with key: {}", cache.getName(), key);
 			future = newFuture;
 		}
-		V result = future.get(key, veto);
+		V result = future.get(key, veto, statistics);
 		if (veto != null && !veto.putInCasheAllowed(key, result)) {
 			LOG.debug("Adding '{}' into cache vetoed.", key);
 			future.setValue(null);

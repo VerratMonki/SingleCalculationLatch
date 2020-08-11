@@ -17,8 +17,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -41,6 +40,7 @@ public class SingleCalculationLatchTest {
 			return false;
 		}
 	};
+	private SimpleCacheStatistics statistics = new SimpleCacheStatistics();
 	
 	@BeforeEach
 	public void setUp() {
@@ -161,7 +161,7 @@ public class SingleCalculationLatchTest {
 		assertNotNull(zero);
 		assertTrue(zero.isDone());
 		assertTrue(zero.isExpired());
-		assertEquals(4, (int)zero.get("zero", null));
+		assertEquals(4, (int)zero.get("zero", null, statistics));
 		verify(valueProvider, times(2)).createValue("zero");
 	}
 	

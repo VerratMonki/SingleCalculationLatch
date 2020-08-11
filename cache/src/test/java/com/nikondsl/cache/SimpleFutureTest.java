@@ -8,11 +8,9 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -20,6 +18,7 @@ import static org.mockito.Mockito.verify;
 public class SimpleFutureTest {
 	private SimpleFuture<String, String, NoOpException> future;
 	private ValueProvider<String, String, NoOpException> valueProvider;
+	private SimpleCacheStatistics statistics = new SimpleCacheStatistics();
 	
 	@BeforeEach
 	void setUp() {
@@ -37,9 +36,9 @@ public class SimpleFutureTest {
 		doReturn(false).when(future).isExpired();
 		doReturn(false).when(future).isDone();
 		
-		assertEquals("ABC", future.get("abc", null));
+		assertEquals("ABC", future.get("abc", null, statistics));
 	
-		verify(future).constructValue("abc");
+		verify(future).constructValue("abc", statistics);
 	}
 	
 	@Test
@@ -47,7 +46,7 @@ public class SimpleFutureTest {
 		future.setException(new NoOpException());
 		
 		assertThrows(NoOpException.class, () -> {
-			future.get("abc", null);
+			future.get("abc", null, null);
 		});
 	}
 	
@@ -58,14 +57,14 @@ public class SimpleFutureTest {
 		doThrow(NoOpException.class).when(valueProvider).createValue("abc");
 		
 		assertThrows(NoOpException.class, () -> {
-			future.get("abc", null);
+			future.get("abc", null, statistics);
 		});
 	}
 	
 	@Test
 	public void testGetExceptionWhenKeyIsNull() throws NoOpException {
 		assertThrows(IllegalArgumentException.class, () -> {
-			future.get(null, null);
+			future.get(null, null, null);
 		});
 	}
 	
@@ -82,8 +81,9 @@ public class SimpleFutureTest {
 	}
 	
 	@Test
-	public void testIsExpiredShouldCheck() {
+	public void testIsExpiredShouldCheckIsDone() {
 		doReturn(Long.MAX_VALUE).when(valueProvider).getTimeToLive();
+		doReturn(true).when(future).isDone();
 		
 		assertFalse(future.isExpired());
 	}

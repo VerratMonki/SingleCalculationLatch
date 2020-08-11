@@ -22,10 +22,11 @@ public class SimpleFuture<K, V, E extends Exception> {
 	 * NOTE: synchronization here is needed to provide access to calculation for only single thread.
 	 * @param key
 	 * @param veto
+	 * @param statistics
 	 * @return
 	 * @throws E
 	 */
-	public V get(K key, CachingVeto<K, V> veto) throws E {
+	public V get(K key, CachingVeto<K, V> veto, SimpleCacheStatistics statistics) throws E {
 		if (key == null) {
 			throw new IllegalArgumentException();
 		}
@@ -33,16 +34,18 @@ public class SimpleFuture<K, V, E extends Exception> {
 			throw exception;
 		}
 		if (getInReadLock(key, veto)) {
+			statistics.hit();
 			return value.getValue();
 		}
 		try {
 			lock.writeLock().lock();
 			
 			if (getInReadLock(key, veto)) {
+				statistics.hit();
 				return value.getValue();
 			}
 			
-			constructValue(key);
+			constructValue(key, statistics);
 			done = true;
 			return value.getValue();
 		} finally {
@@ -67,12 +70,14 @@ public class SimpleFuture<K, V, E extends Exception> {
 		return done;
 	}
 	
-	void constructValue(K key) throws E {
+	void constructValue(K key, SimpleCacheStatistics statistics) throws E {
 		createdTime = System.currentTimeMillis();
 		try{
 			setValue(valueProvider.createValue(key));
+			statistics.miss();
 		} catch (Exception exception) {
 			this.exception = (E) exception;
+			statistics.error();
 			throw exception;
 		}
 	}
