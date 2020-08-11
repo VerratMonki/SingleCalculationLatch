@@ -7,6 +7,7 @@ public class SimpleCacheStatistics {
 	private AtomicInteger misses = new AtomicInteger();
 	private AtomicInteger errors = new AtomicInteger();
 	private AtomicInteger removes = new AtomicInteger();
+	private AtomicInteger totalInCache = new AtomicInteger();
 	
 	public void hit() {
 		hits.incrementAndGet();
@@ -40,6 +41,10 @@ public class SimpleCacheStatistics {
 		return removes.get();
 	}
 	
+	public void setTotalSize(int size) {
+		this.totalInCache.set(size);
+	}
+	
 	public int ratio() {
 		int sum = getHits() + getMisses() + getErrors();
 		if (sum == 0) return 0;
@@ -48,6 +53,6 @@ public class SimpleCacheStatistics {
 	
 	@Override
 	public String toString() {
-		return "ratio: "+ratio()+" %, "+getHits()+"/"+getMisses()+"/"+getErrors()+"/"+getRemoves()+" (hit/miss/error/removed)";
+		return "ratio: "+ratio()+" %, "+getHits()+"/"+getMisses()+"/"+getErrors()+"/"+getRemoves()+"/"+totalInCache.get()+" (hit/miss/error/removed/total)";
 	}
 }

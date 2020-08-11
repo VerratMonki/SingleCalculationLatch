@@ -20,7 +20,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	private Thread cleaner = new Thread(() -> {
 		LOG.info("Cache cleaner [{}] started", cache.getName());
 		while (!stop) {
-			LOG.error(String.valueOf(statistics));
+			LOG.info(String.valueOf(statistics));
 			try {
 				TimeUnit.MILLISECONDS.sleep(sleepBeforeDelete);
 			} catch (InterruptedException e) {
@@ -39,9 +39,12 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	
 	void removeAllExpired() throws Exception {
 		LOG.debug("Running clearing expired elements in cache: {}", cache.getName());
+		int count = 0;
 		for(Map.Entry<K, SimpleFuture<K, V, E>> entry :  cache.getEntries()) {
 			removeElement(entry);
+			count++;
 		}
+		statistics.setTotalSize(count);
 		LOG.error(statistics.toString());
 	}
 	
