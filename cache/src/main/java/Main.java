@@ -4,148 +4,123 @@ import com.nikondsl.cache.SimpleFuture;
 import com.nikondsl.cache.SingleCalculationLatch;
 import com.nikondsl.cache.ValueProvider;
 
+import java.security.SecureRandom;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
-
-    public static void main(String[] args) throws Exception {
-	// write your code here
-        CacheProvider<String, SimpleFuture<String, Integer, Exception>> cacheProvider = new CacheProvider<String, SimpleFuture<String, Integer, Exception>>() {
-            private ConcurrentMap<String, SimpleFuture<String, Integer, Exception> > cache = new ConcurrentHashMap<>();
     
-            @Override
-            public String getName() {
-                return "default";
-            }
+    static class Holder {
+       private byte[] bytes = new byte[10240];
+       private int number;
     
-            @Override
-            public SimpleFuture<String, Integer, Exception>  get(String key) {
-                return cache.get(key);
-            }
+        public Holder(int length) {
+            number = length;
+        }
+    }
     
-            @Override
-            public SimpleFuture<String, Integer, Exception>  putIfAbsent(String key, SimpleFuture<String, Integer, Exception>  value) {
-             
-                SimpleFuture<String, Integer, Exception> future = cache.putIfAbsent(key, value);
-                return future;
-            }
-    
-            @Override
-            public SimpleFuture<String, Integer, Exception>  remove(String key) {
-                return cache.remove(key);
-            }
-    
-            @Override
-            public Iterable<Map.Entry<String, SimpleFuture<String, Integer, Exception> >> getEntries() {
-                return cache.entrySet();
-            }
-        };
-        ValueProvider<String, Integer, Exception> valueProvider = new ValueProvider<String, Integer, Exception>() {
-            @Override
-            public Integer createValue(String key) throws Exception {
-                TimeUnit.SECONDS.sleep(3);
-                return key.length();
-            }
-    
-            @Override
-            public long getTimeToLive() {
-                return 5_000L;
-            }
-    
-            @Override
-            public ReferenceType getReferenceType() {
-                return ReferenceType.STRONG;
-            }
-        };
+    static CacheProvider<String, SimpleFuture<String, Holder, Exception>> cacheProvider = new CacheProvider<String, SimpleFuture<String, Holder, Exception>>() {
+        private ConcurrentMap<String, SimpleFuture<String, Holder, Exception> > cache = new ConcurrentHashMap<>();
         
-        SingleCalculationLatch<String, Integer, Exception> latch = new SingleCalculationLatch(cacheProvider, valueProvider);
-    
-        ExecutorService service = Executors.newFixedThreadPool(20);
-        long time =System.currentTimeMillis();
-        service.submit(()-> {
-            try {
-                System.out.println("1. abc="+latch.get("abc"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        service.submit(()-> {
-            try {
-                System.out.println("2. abcde="+latch.get("abcde"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        service.submit(()-> {
-            try {
-                System.out.println("3. abcde="+latch.get("abcde"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        service.submit(()-> {
-            try {
-                System.out.println("4. ab="+latch.get("ab"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        service.submit(()-> {
-            try {
-                System.out.println("5. abc="+latch.get("abc"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        service.submit(()-> {
-            try {
-                System.out.println("6. abc="+latch.get("abc"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        service.submit(()-> {
-            try {
-                System.out.println("7. abc="+latch.get("abc"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        service.submit(()-> {
-            try {
-                System.out.println("8. abc="+latch.get("abc"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        service.submit(()-> {
-            try {
-                System.out.println("9. ab="+latch.get("ab"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        service.submit(()-> {
-            try {
-                System.out.println("10.abcde="+latch.get("abcde"));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        
-        
-        service.shutdown();
-        if(service.awaitTermination(1, TimeUnit.MINUTES)){
-            System.out.println("OK, time "+(System.currentTimeMillis()-time)+" ms");
+        @Override
+        public String getName() {
+            return "default";
         }
         
+        @Override
+        public SimpleFuture<String, Holder, Exception>  get(String key) {
+            return cache.get(key);
+        }
+        
+        @Override
+        public SimpleFuture<String, Holder, Exception>  putIfAbsent(String key, SimpleFuture<String, Holder, Exception>  value) {
+            
+            SimpleFuture<String, Holder, Exception> future = cache.putIfAbsent(key, value);
+            return future;
+        }
+        
+        @Override
+        public SimpleFuture<String, Holder, Exception>  remove(String key) {
+            return cache.remove(key);
+        }
+        
+        @Override
+        public Iterable<Map.Entry<String, SimpleFuture<String, Holder, Exception> >> getEntries() {
+            return cache.entrySet();
+        }
+    };
+    
+    static ValueProvider<String, Holder, Exception> valueProvider = new ValueProvider<String, Holder, Exception>() {
+        @Override
+        public Holder createValue(String key) throws Exception {
+            TimeUnit.MILLISECONDS.sleep(50);
+            return new Holder(key.length());
+        }
+        
+        @Override
+        public long getTimeToLive() {
+            return 300_000L;
+        }
+        
+        @Override
+        public ReferenceType getReferenceType() {
+            return ReferenceType.SOFT;
+        }
+    };
+    
+    static SingleCalculationLatch<String, Holder, Exception> latch = new SingleCalculationLatch(cacheProvider, valueProvider);
+    
+    static ExecutorService service = Executors.newCachedThreadPool();
+    
+    public static void main(String[] args) throws Exception {
+        latch.setSleepBeforeDelete(5_000);
+        long time = System.currentTimeMillis();
+        for(int i=0;i<100_000_000;i++) {
+            if (i % 200_000 == 0) System.out.println("#"+i+". completed: "+((ThreadPoolExecutor) service).getCompletedTaskCount());
+            main1(args);
+        }
+    
+        service.shutdown();
+        if(service.awaitTermination(10, TimeUnit.MINUTES)){
+            System.out.println("OK, time "+(System.currentTimeMillis()-time)+" ms");
+        }
+    
         latch.stop();
     }
     
+    private static String letters = "abcdefghijklmnopqrstuvxyzklmnopqrstu1234567890!@#$%";
+    static SecureRandom random = new SecureRandom();
+    
+    private static String generateRandomText(int length) {
+        StringBuilder result = new StringBuilder("#");
+        while(result.toString().length() <= 2) {
+            for (int i = 0; i < length; i++) {
+                result.append(letters.charAt((int) (random.nextDouble() * letters.length())));
+            }
+        }
+        return result.toString();
+    }
+    
+    public static void main1(String[] args) throws Exception {
+	    // write your code here
+        
+        service.submit(()-> {
+            try {
+                String key = generateRandomText((int) (random.nextDouble() * 4));
+                latch.get(key);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        
+    }
     
 }

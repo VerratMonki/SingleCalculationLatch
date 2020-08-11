@@ -41,6 +41,13 @@ public class SimpleCacheStatistics {
 	}
 	
 	public int ratio() {
-		return (int) (100.0 * getHits() / (getHits() + getMisses() + getErrors()));
+		int sum = getHits() + getMisses() + getErrors();
+		if (sum == 0) return 0;
+		return (int) (100.0 * getHits() / sum);
+	}
+	
+	@Override
+	public String toString() {
+		return "ratio: "+ratio()+" %, "+getHits()+"/"+getMisses()+"/"+getErrors()+"/"+getRemoves()+" (hit/miss/error/removed)";
 	}
 }

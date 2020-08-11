@@ -20,25 +20,29 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	private Thread cleaner = new Thread(() -> {
 		LOG.info("Cache cleaner [{}] started", cache.getName());
 		while (!stop) {
-			removeAllExpired();
-		}
-		LOG.info("Cache cleaner [{}] stopped", cache.getName());
-	});
-	
-	void removeAllExpired() {
-		LOG.debug("Running clearing expired elements in cache: {}", cache.getName());
-		for(Map.Entry<K, SimpleFuture<K, V, E>> entry :  cache.getEntries()) {
+			LOG.error(String.valueOf(statistics));
 			try {
 				TimeUnit.MILLISECONDS.sleep(sleepBeforeDelete);
-				removeElement(entry);
 			} catch (InterruptedException e) {
 				stop = true;
 				Thread.currentThread().interrupt();
 				break;
+			}
+			try {
+				removeAllExpired();
 			} catch (Exception ex) {
-				LOG.error("Could not clear cache entry with key: {}", entry.getKey(), ex);
+				LOG.error("Could not clear cache", ex);
 			}
 		}
+		LOG.info("Cache cleaner [{}] stopped", cache.getName());
+	});
+	
+	void removeAllExpired() throws Exception {
+		LOG.debug("Running clearing expired elements in cache: {}", cache.getName());
+		for(Map.Entry<K, SimpleFuture<K, V, E>> entry :  cache.getEntries()) {
+			removeElement(entry);
+		}
+		LOG.error(statistics.toString());
 	}
 	
 	private void removeElement(Map.Entry<K, SimpleFuture<K, V, E>> entry) throws E {
