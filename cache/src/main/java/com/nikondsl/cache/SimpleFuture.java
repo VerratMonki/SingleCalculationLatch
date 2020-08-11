@@ -1,8 +1,5 @@
 package com.nikondsl.cache;
 
-import java.lang.ref.Reference;
-import java.lang.ref.SoftReference;
-import java.lang.ref.WeakReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class SimpleFuture<K, V, E extends Exception> {
@@ -35,23 +32,35 @@ public class SimpleFuture<K, V, E extends Exception> {
 		if (exception != null) {
 			throw exception;
 		}
-		try{
-			lock.readLock().lock();
-			boolean expired = isExpired() && (veto == null || value == null || veto.expireAllowed(key, value.getValue()));
-			if (isDone() && !expired) {
-				return value.getValue();
-			}
-		} finally {
-			lock.readLock().unlock();
+		if (getInReadLock(key, veto)) {
+			return value.getValue();
 		}
 		try {
 			lock.writeLock().lock();
+			
+			if (getInReadLock(key, veto)) {
+				return value.getValue();
+			}
+			
 			constructValue(key);
 			done = true;
 			return value.getValue();
 		} finally {
 			lock.writeLock().unlock();
 		}
+	}
+	
+	private boolean getInReadLock(K key, CachingVeto<K, V> veto) {
+		try {
+			lock.readLock().lock();
+			boolean expired = isExpired() && (veto == null || value == null || veto.expireAllowed(key, value.getValue()));
+			if (isDone() && !expired) {
+				return true;
+			}
+		} finally {
+			lock.readLock().unlock();
+		}
+		return false;
 	}
 	
 	public boolean isDone() {

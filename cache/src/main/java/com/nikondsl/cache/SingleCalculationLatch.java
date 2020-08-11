@@ -67,6 +67,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		}
 		V result = future.get(key, veto);
 		if (veto != null && !veto.putInCasheAllowed(key, result)) {
+			LOG.debug("Adding '{}' into cache vetoed.", key);
 			future.setValue(null);
 		}
 		return result;

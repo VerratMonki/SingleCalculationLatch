@@ -30,7 +30,9 @@ public class Main {
     
             @Override
             public SimpleFuture<String, Integer, Exception>  putIfAbsent(String key, SimpleFuture<String, Integer, Exception>  value) {
-                return cache.putIfAbsent(key, value);
+             
+                SimpleFuture<String, Integer, Exception> future = cache.putIfAbsent(key, value);
+                return future;
             }
     
             @Override
