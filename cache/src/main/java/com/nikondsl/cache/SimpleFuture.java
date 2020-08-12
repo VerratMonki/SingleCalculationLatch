@@ -39,13 +39,13 @@ public class SimpleFuture<K, V, E extends Exception> {
 		}
 		try {
 			lock.writeLock().lock();
-			
 			if (getInReadLock(key, veto)) {
 				statistics.hit();
 				return value.getValue();
 			}
 			
 			constructValue(key, statistics);
+			statistics.setMaxHold(lock.getReadLockCount());
 			done = true;
 			return value.getValue();
 		} finally {

@@ -8,6 +8,7 @@ public class SimpleCacheStatistics {
 	private AtomicInteger errors = new AtomicInteger();
 	private AtomicInteger removes = new AtomicInteger();
 	private AtomicInteger totalInCache = new AtomicInteger();
+	private AtomicInteger maxHold = new AtomicInteger();
 	
 	public void hit() {
 		hits.incrementAndGet();
@@ -45,6 +46,12 @@ public class SimpleCacheStatistics {
 		this.totalInCache.set(size);
 	}
 	
+	public void setMaxHold(int count) {
+		if (count > maxHold.get()) {
+			maxHold.set(count);
+		}
+	}
+	
 	public int ratio() {
 		int sum = getHits() + getMisses() + getErrors();
 		if (sum == 0) return 0;
@@ -53,6 +60,8 @@ public class SimpleCacheStatistics {
 	
 	@Override
 	public String toString() {
-		return "ratio: "+ratio()+" %, "+getHits()+"/"+getMisses()+"/"+getErrors()+"/"+getRemoves()+"/"+totalInCache.get()+" (hit/miss/error/removed/total)";
+		return "ratio: "+ratio()+" %, "+getHits()+"/"+getMisses()+"/"+getErrors()+"/"+getRemoves()+"/"+totalInCache.get()+
+				"/"+maxHold.get()+
+				" (hit/miss/error/removed/total/max_hold)";
 	}
 }

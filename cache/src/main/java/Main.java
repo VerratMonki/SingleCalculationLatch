@@ -61,7 +61,7 @@ public class Main {
     static ValueProvider<String, Holder, Exception> valueProvider = new ValueProvider<String, Holder, Exception>() {
         @Override
         public Holder createValue(String key) throws Exception {
-            TimeUnit.MILLISECONDS.sleep(50);
+            TimeUnit.MILLISECONDS.sleep(750);
             return new Holder(key.length());
         }
         
@@ -78,33 +78,37 @@ public class Main {
     
     static SingleCalculationLatch<String, Holder, Exception> latch = new SingleCalculationLatch(cacheProvider, valueProvider);
     
-    static ExecutorService service = Executors.newCachedThreadPool();
+    static ExecutorService service = Executors.newFixedThreadPool(20);
     
     public static void main(String[] args) throws Exception {
         latch.setSleepBeforeDelete(5_000);
         long time = System.currentTimeMillis();
-        for(int i=0;i<100_000_000;i++) {
-            if (i % 200_000 == 0) System.out.println("#"+i+". completed: "+((ThreadPoolExecutor) service).getCompletedTaskCount());
+        for(int i=0;i<1000_000;i++) {
+            if (i % 10_000 == 0) {
+                System.err.println("sleep...");
+                TimeUnit.MILLISECONDS.sleep(3000);
+            }
+            if (i % 10_000 == 0) System.out.println("#"+i+". completed: "+((ThreadPoolExecutor) service).getCompletedTaskCount());
             main1(args);
         }
     
         service.shutdown();
-        if(service.awaitTermination(10, TimeUnit.MINUTES)){
-            System.out.println("OK, time "+(System.currentTimeMillis()-time)+" ms");
+        while(!service.awaitTermination(10, TimeUnit.SECONDS)){
+            System.out.println("Waiting... time "+(System.currentTimeMillis()-time)+" ms, left: "+(
+                    (ThreadPoolExecutor) service).getActiveCount() +", completed: "+ ((ThreadPoolExecutor) service).getCompletedTaskCount());
         }
     
         latch.stop();
     }
     
     private static String letters = "abcdefghijklmnopqrstuvxyzklmnopqrstu1234567890!@#$%";
-    static SecureRandom random = new SecureRandom();
+    static SyncRandom random = new SyncRandom();
     
     private static String generateRandomText(int length) {
-        StringBuilder result = new StringBuilder("#");
-        while(result.toString().length() <= 2) {
-            for (int i = 0; i < length; i++) {
-                result.append(letters.charAt((int) (random.nextDouble() * letters.length())));
-            }
+        StringBuilder result = new StringBuilder(16);
+        int size = letters.length();
+        for (int i = 0; i < length; i++) {
+            result.append(letters.charAt((int) (random.nextDouble() * size)));
         }
         return result.toString();
     }
@@ -112,15 +116,13 @@ public class Main {
     public static void main1(String[] args) throws Exception {
 	    // write your code here
         
-        service.submit(()-> {
+        service.execute(()-> {
             try {
-                String key = generateRandomText((int) (random.nextDouble() * 4));
+                String key = generateRandomText(2);
                 latch.get(key);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
-        
     }
-    
 }
