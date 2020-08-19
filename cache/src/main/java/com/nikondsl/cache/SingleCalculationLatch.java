@@ -45,7 +45,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 			count++;
 		}
 		statistics.setTotalSize(count);
-		LOG.error(statistics.toString());
+		LOG.info(statistics.toString());
 	}
 	
 	private void removeElement(Map.Entry<K, SimpleFuture<K, V, E>> entry) throws E {
