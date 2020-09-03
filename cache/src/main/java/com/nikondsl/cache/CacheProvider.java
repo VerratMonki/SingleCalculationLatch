@@ -1,6 +1,9 @@
 package com.nikondsl.cache;
 
+import org.ehcache.Cache;
+
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * This class provides cache common interface. Key should support valid equals/hashCode methods.
@@ -53,5 +56,5 @@ public interface CacheProvider<K, V> {
 	 * Returns all entries which are stored in cache for further deletion.
 	 * @return entries in cache.
 	 */
-	Iterable<Map.Entry<K, V>> getEntries();
+	void forEach(Consumer<Cache.Entry<K, V>> consumer);
 }

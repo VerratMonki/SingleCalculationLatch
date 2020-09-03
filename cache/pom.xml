@@ -21,6 +21,7 @@
         <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
         <junit-platform-surefire-provider.version>1.0.1</junit-platform-surefire-provider.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
+        <ehcache.version>3.9.0</ehcache.version>
     </properties>
 
     <dependencies>
@@ -40,6 +41,14 @@
             <artifactId>log4j-slf4j-impl</artifactId>
             <version>${log4j-api.version}</version>
         </dependency>
+        <!-- cache dependencies -->
+        <!-- https://mvnrepository.com/artifact/org.ehcache/ehcache -->
+        <dependency>
+            <groupId>org.ehcache</groupId>
+            <artifactId>ehcache</artifactId>
+            <version>${ehcache.version}</version>
+        </dependency>
+
 
         <!-- testing dependencies  -->
         <dependency>

@@ -3,8 +3,8 @@ package com.nikondsl.cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Main class for providing cache features and latching.  Typical usage will be like below;
@@ -61,24 +61,24 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	
 	void removeAllExpired() throws Exception {
 		LOG.debug("Running clearing expired elements in cache: {}", cache.getName());
-		int count = 0;
-		for(Map.Entry<K, SimpleFuture<K, V, E>> entry :  cache.getEntries()) {
-			removeElement(entry);
-			count++;
-			if (stop) {
-				break;
+		final AtomicInteger count = new AtomicInteger();
+		cache.forEach(entry -> {
+			try {
+				removeElement(entry.getKey(), entry.getValue());
+			} catch (Exception ex) {
+				LOG.error("Could not remove element '{}'", entry.getKey(), ex);
 			}
-		}
-		statistics.setTotalSize(count);
+			count.incrementAndGet();
+		});
+		statistics.setTotalSize(count.get());
 		LOG.info(statistics.toString());
 	}
 	
-	private void removeElement(Map.Entry<K, SimpleFuture<K, V, E>> entry) throws E {
-		if (entry == null || !entry.getValue().isDone() || !entry.getValue().isExpired()) {
+	private void removeElement(K key, SimpleFuture<K, V, E> value) throws E {
+		if (key == null || !value.isDone() || !value.isExpired()) {
 			return;
 		}
-		K key = entry.getKey();
-		if (veto == null || veto.removeAllowed(key, entry.getValue().get(key, veto, statistics))) {
+		if (veto == null || veto.removeAllowed(key, value.get(key, veto, statistics))) {
 			cache.remove(key);
 			statistics.remove();
 			LOG.trace("Element with key: {} is removed from cache: {}", key, cache.getName());
@@ -126,10 +126,10 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	}
 	
 	public void setSleepBeforeDelete(final long sleepBeforeDelete) {
-		if (sleepBeforeDelete > 0) {
-			LOG.debug("Sleeping period between removing is set to: {} for cache: {}",
-					sleepBeforeDelete, cache.getName());
-			this.sleepBeforeDelete = sleepBeforeDelete;
+		if (sleepBeforeDelete <= 0) {
+			return;
 		}
+		LOG.debug("Sleeping period between removing is set to: {} for cache: {}", sleepBeforeDelete, cache.getName());
+		this.sleepBeforeDelete = sleepBeforeDelete;
 	}
 }

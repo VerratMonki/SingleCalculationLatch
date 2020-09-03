@@ -1,5 +1,6 @@
 package com.nikondsl.cache;
 
+import org.ehcache.Cache;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -7,12 +8,12 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,9 +67,20 @@ public class SingleCalculationLatchTest {
 			}
 			
 			@Override
-			public Iterable<Map.Entry<String, SimpleFuture<String, Integer, Exception> >> getEntries() {
-				return cache.entrySet();
+			public void forEach(Consumer<Cache.Entry<String, SimpleFuture<String, Integer, Exception>>> consumer) {
+				cache.forEach((key, value) -> consumer.accept(new Cache.Entry<String, SimpleFuture<String, Integer, Exception>>() {
+					@Override
+					public String getKey() {
+						return key;
+					}
+					
+					@Override
+					public SimpleFuture<String, Integer, Exception> getValue() {
+						return value;
+					}
+				}));
 			}
+			
 		});
 		valueProvider = spy(new ValueProvider<String, Integer, Exception>() {
 			@Override

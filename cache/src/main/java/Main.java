@@ -3,6 +3,7 @@ import com.nikondsl.cache.ReferenceType;
 import com.nikondsl.cache.SimpleFuture;
 import com.nikondsl.cache.SingleCalculationLatch;
 import com.nikondsl.cache.ValueProvider;
+import org.ehcache.Cache;
 
 import java.security.SecureRandom;
 import java.util.HashSet;
@@ -15,6 +16,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class Main {
     
@@ -51,10 +54,26 @@ public class Main {
         public SimpleFuture<String, Holder, Exception>  remove(String key) {
             return cache.remove(key);
         }
-        
+    
         @Override
-        public Iterable<Map.Entry<String, SimpleFuture<String, Holder, Exception> >> getEntries() {
-            return cache.entrySet();
+        public void forEach(Consumer<Cache.Entry<String, SimpleFuture<String, Holder, Exception>>> consumer) {
+            cache.forEach(new BiConsumer<String, SimpleFuture<String, Holder, Exception>>() {
+                @Override
+                public void accept(String key, SimpleFuture<String, Holder, Exception> value) {
+                    consumer.accept(new Cache.Entry<String, SimpleFuture<String, Holder, Exception>>() {
+                        @Override
+                        public String getKey() {
+                            return key;
+                        }
+    
+                        @Override
+                        public SimpleFuture<String, Holder, Exception> getValue() {
+                            return value;
+                        }
+                    });
+        
+                }
+            });
         }
     };
     
