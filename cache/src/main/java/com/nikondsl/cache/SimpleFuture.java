@@ -2,33 +2,39 @@ package com.nikondsl.cache;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ * Cache will use this future for managing creating values.
+ * @param <K> class for specifying key.
+ * @param <V> class for specifying value.
+ * @param <E> class for specifying exception.
+ */
 public class SimpleFuture<K, V, E extends Exception> {
 	private volatile long createdTime = System.currentTimeMillis();
 	private volatile Reference<V> value;
 	private volatile E exception;
-	volatile boolean done = false;
+	private volatile boolean done = false;
 	private final ValueProvider<K, V, E> valueProvider;
 	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 	
 	public SimpleFuture(ValueProvider<K, V, E> valueProvider) {
 		if (valueProvider == null) {
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("No value provider presented");
 		}
 		this.valueProvider = valueProvider;
 	}
 	
 	/**
-	 * Returns a calculated value if it's presented or calculate it and return.
+	 * Returns a calculated value if it's presented or calculates it and returns.
 	 * NOTE: synchronization here is needed to provide access to calculation for only single thread.
-	 * @param key
+	 * @param key key for caching.
 	 * @param veto
 	 * @param statistics
-	 * @return
+	 * @return value in cashe if presented or calculates new value and returns it.
 	 * @throws E
 	 */
 	public V get(K key, CachingVeto<K, V> veto, SimpleCacheStatistics statistics) throws E {
 		if (key == null) {
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Key is required, nulls are not supported.");
 		}
 		if (exception != null) {
 			throw exception;
@@ -37,13 +43,12 @@ public class SimpleFuture<K, V, E extends Exception> {
 			statistics.hit();
 			return value.getValue();
 		}
+		lock.writeLock().lock();
 		try {
-			lock.writeLock().lock();
 			if (getInReadLock(key, veto)) {
 				statistics.hit();
 				return value.getValue();
 			}
-			
 			constructValue(key, statistics);
 			statistics.setMaxHold(lock.getReadLockCount());
 			done = true;
@@ -54,8 +59,8 @@ public class SimpleFuture<K, V, E extends Exception> {
 	}
 	
 	private boolean getInReadLock(K key, CachingVeto<K, V> veto) {
+		lock.readLock().lock();
 		try {
-			lock.readLock().lock();
 			boolean expired = isExpired() && (veto == null || value == null || veto.expireAllowed(key, value.getValue()));
 			if (isDone() && !expired) {
 				return true;
@@ -70,6 +75,12 @@ public class SimpleFuture<K, V, E extends Exception> {
 		return done;
 	}
 	
+	/**
+	 * Creates a new value for a given key.
+	 * @param key for caching.
+	 * @param statistics
+	 * @throws E if any exception occurs.
+	 */
 	void constructValue(K key, SimpleCacheStatistics statistics) throws E {
 		createdTime = System.currentTimeMillis();
 		try{
@@ -97,10 +108,10 @@ public class SimpleFuture<K, V, E extends Exception> {
 	void setValue(V value) {
 		switch (valueProvider.getReferenceType()) {
 			case STRONG:
-				this.value = new StrongReference(value);
+				this.value = new StrongReference<>(value);
 				return;
 			case WEAK:
-				this.value = new WeakReference(value);
+				this.value = new WeakReference<>(value);
 				return;
 			default:
 				this.value = new SoftReference<>(value);

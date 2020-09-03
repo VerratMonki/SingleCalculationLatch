@@ -97,7 +97,6 @@ public class Main {
             System.out.println("Waiting... time "+(System.currentTimeMillis()-time)+" ms, left: "+(
                     (ThreadPoolExecutor) service).getActiveCount() +", completed: "+ ((ThreadPoolExecutor) service).getCompletedTaskCount());
         }
-    
         latch.stop();
     }
     

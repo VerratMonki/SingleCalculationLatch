@@ -3,10 +3,10 @@ package com.nikondsl.cache;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Factory for providing calculation for values by given keys.
- * @param <K>
- * @param <V>
- * @param <E>
+ * Factory for providing value calculation by given key.
+ * @param <K> class for specifying keys.
+ * @param <V> class for specifying values.
+ * @param <E> class for specifying exception if occurs during value creation.
  */
 public interface ValueProvider<K, V, E extends Throwable> {
 	/**
@@ -18,8 +18,8 @@ public interface ValueProvider<K, V, E extends Throwable> {
 	V createValue(K key) throws E;
 	
 	/**
-	 * TimeTToLive newly created element in cache.
-	 * @return milliseconds till element in cache is not expired and may be used.
+	 * TimeToLive for newly created elements in cache.
+	 * @return milliseconds till element in cache is not expired and may be used further.
 	 */
 	default long getTimeToLive() {
 		return TimeUnit.SECONDS.toMillis(1L);

@@ -16,8 +16,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -29,7 +27,7 @@ public class SingleCalculationLatchTest {
 	private SingleCalculationLatch<String, Integer, Exception> latch;
 	private CacheProvider<String, SimpleFuture<String, Integer, Exception>> cacheProvider;
 	private ValueProvider<String, Integer, Exception> valueProvider;
-	public static final CachingVeto<String, Integer> NO_EXPIRE_VETO = new CachingVeto<String, Integer>() {
+	private static final CachingVeto<String, Integer> NO_EXPIRE_VETO = new CachingVeto<String, Integer>() {
 		@Override
 		public boolean removeAllowed(String key, Integer value) {
 			return false;
@@ -183,7 +181,6 @@ public class SingleCalculationLatchTest {
 	public void testThreadShouldWaitWhileCalculates() throws Exception {
 		latch.setVeto(NO_EXPIRE_VETO);
 		ExecutorService service = Executors.newFixedThreadPool(3);
-		long time =System.currentTimeMillis();
 		Exception[] exceptions = new Exception[1];
 		service.submit(()-> {
 			try {

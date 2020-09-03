@@ -6,6 +6,20 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Main class for providing cache features and latching.  Typical usage will be like below;
+ *
+ * CacheProvider cacheProvider = ...
+ * ValueProvider valueProvider = ...
+ * SingleCalculationLatch latch = new SingleCalculationLatch(cacheProvider, valueProvider);
+ * latch.setSleepBeforeDelete(5_000);
+ * ...
+ * latch.get(key);
+ *
+ * @param <K> class for specifying keys.
+ * @param <V> class for specifying values.
+ * @param <E> class for specifying exception if appears during value creation.
+ */
 public class SingleCalculationLatch<K, V, E extends Exception> {
 	private static Logger LOG = LoggerFactory.getLogger(SingleCalculationLatch.class);
 	private static long DEFAULT_SLEEP_DELETE = 30_000L;
@@ -14,10 +28,17 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	private ValueProvider<K, V, E> valueProvider;
 	private CachingVeto<K, V> veto;
 	private volatile boolean stop = false;
-	private long sleepBeforeDelete = DEFAULT_SLEEP_DELETE;
+	private volatile long sleepBeforeDelete = DEFAULT_SLEEP_DELETE;
 	private SimpleCacheStatistics statistics = new SimpleCacheStatistics();
 	
 	private Thread cleaner = new Thread(() -> {
+		try {
+			TimeUnit.SECONDS.sleep(1);
+		} catch (InterruptedException e) {
+			stop = true;
+			Thread.currentThread().interrupt();
+			return;
+		}
 		LOG.info("Cache cleaner [{}] started", cache.getName());
 		while (!stop) {
 			LOG.info(String.valueOf(statistics));
@@ -31,6 +52,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 			try {
 				removeAllExpired();
 			} catch (Exception ex) {
+				System.err.println("exc...");
 				LOG.error("Could not clear cache", ex);
 			}
 		}
@@ -43,6 +65,9 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		for(Map.Entry<K, SimpleFuture<K, V, E>> entry :  cache.getEntries()) {
 			removeElement(entry);
 			count++;
+			if (stop) {
+				break;
+			}
 		}
 		statistics.setTotalSize(count);
 		LOG.info(statistics.toString());

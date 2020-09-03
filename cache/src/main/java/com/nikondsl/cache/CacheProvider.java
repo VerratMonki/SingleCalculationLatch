@@ -3,11 +3,12 @@ package com.nikondsl.cache;
 import java.util.Map;
 
 /**
- * This class provides some cache. Key should support valid equals/hashCode methods.
- * Note: main method for putting element into cache is atomic putIfAbsent, like in ConcurrentMap.
- * If atomicy for putIfAbset is not supported, there can be several callers which are creating values.
- * @param <K>
- * @param <V>
+ * This class provides cache common interface. Key should support valid equals/hashCode methods.
+ * Note: main method for putting element into cache is atomic putIfAbsent, like it is in ConcurrentMap.
+ * If atomic for putIfAbsent is not supported, there can be several callers which are creating values,
+ * and this utility can me reduced to simplest Map, with TTL feature.
+ * @param <K> class for keys, instances should follow the usual rules for hashCode/equals methods.
+ * @param <V> class for values
  */
 
 public interface CacheProvider<K, V> {

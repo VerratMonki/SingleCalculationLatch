@@ -1,7 +1,8 @@
 package com.nikondsl.cache;
 
 /**
- * Provides some permissions/rules for caching.
+ * Provides some permissions/rules for caching. Vetoing means that operation
+ * is not permitted for particular key/value pair.
  * @param <K> class for key in cache.
  * @param <V> class for value in cache.
  */
