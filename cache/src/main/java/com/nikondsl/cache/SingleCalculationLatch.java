@@ -3,6 +3,7 @@ package com.nikondsl.cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.SoftReference;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,6 +31,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	private volatile boolean stop = false;
 	private volatile long sleepBeforeDelete = DEFAULT_SLEEP_DELETE;
 	private SimpleCacheStatistics statistics = new SimpleCacheStatistics();
+	private volatile SoftReference flagOutOfMemory = new SoftReference(new Object());
 	
 	private Thread cleaner = new Thread(() -> {
 		try {
@@ -43,7 +45,24 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		while (!stop) {
 			LOG.info(String.valueOf(statistics));
 			try {
-				TimeUnit.MILLISECONDS.sleep(sleepBeforeDelete);
+				if (flagOutOfMemory.get() != null) {
+					TimeUnit.MILLISECONDS.sleep(sleepBeforeDelete);
+				} else {
+					LOG.info("OutOfMemory warning event fired. Clearing cache '{}'...", cache.getName());
+					//clear all, except busy
+					cache.forEach(entry -> {
+						try {
+							if (entry.getValue().isDone()) {
+								removeElement(entry.getKey(), entry.getValue(), false);
+							}
+						} catch (Exception ex) {
+							LOG.error("Could not remove element '{}'", entry.getKey(), ex);
+						}
+					});
+					LOG.info("Cache '{}' cleared.", cache.getName());
+					flagOutOfMemory = new SoftReference(new Object());
+				}
+				
 			} catch (InterruptedException e) {
 				stop = true;
 				Thread.currentThread().interrupt();
@@ -52,7 +71,6 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 			try {
 				removeAllExpired();
 			} catch (Exception ex) {
-				System.err.println("exc...");
 				LOG.error("Could not clear cache", ex);
 			}
 		}
@@ -64,7 +82,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		final AtomicInteger count = new AtomicInteger();
 		cache.forEach(entry -> {
 			try {
-				removeElement(entry.getKey(), entry.getValue());
+				removeElement(entry.getKey(), entry.getValue(), true);
 			} catch (Exception ex) {
 				LOG.error("Could not remove element '{}'", entry.getKey(), ex);
 			}
@@ -74,11 +92,11 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		LOG.info(statistics.toString());
 	}
 	
-	private void removeElement(K key, SimpleFuture<K, V, E> value) throws E {
+	private void removeElement(K key, SimpleFuture<K, V, E> value, boolean checkVeto) throws E {
 		if (key == null || !value.isDone() || !value.isExpired()) {
 			return;
 		}
-		if (veto == null || veto.removeAllowed(key, value.get(key, veto, statistics))) {
+		if (veto == null || checkVeto && veto.removeAllowed(key, value.get(key, veto, statistics))) {
 			cache.remove(key);
 			statistics.remove();
 			LOG.trace("Element with key: {} is removed from cache: {}", key, cache.getName());
