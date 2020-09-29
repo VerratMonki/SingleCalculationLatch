@@ -3,9 +3,12 @@ package com.nikondsl.cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Main class for providing cache features and latching.  Typical usage will be like below;
@@ -31,7 +34,26 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	private volatile boolean stop = false;
 	private volatile long sleepBeforeDelete = DEFAULT_SLEEP_DELETE;
 	private SimpleCacheStatistics statistics = new SimpleCacheStatistics();
-	private volatile SoftReference flagOutOfMemory = new SoftReference(new Object());
+	private final AtomicReference<Reference<Object>> flagOutOfMemory = new AtomicReference<>();
+	
+	private void setUpFlagOutOfMemory() {
+		if (valueProvider.getReferenceType() == ReferenceType.WEAK) {
+			flagOutOfMemory.set(new WeakReference<>(new Object()));
+		} else {
+			flagOutOfMemory.set(new SoftReference(new Object()));
+		}
+	}
+	
+	private boolean isAboutOutOfMemory() {
+		if (valueProvider.getReferenceType() == ReferenceType.STRONG) {
+			return false;
+		}
+		if (flagOutOfMemory.get().get() == null) {
+			setUpFlagOutOfMemory();
+			return true;
+		}
+		return false;
+	}
 	
 	private Thread cleaner = new Thread(() -> {
 		try {
@@ -39,13 +61,14 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		} catch (InterruptedException e) {
 			stop = true;
 			Thread.currentThread().interrupt();
+			LOG.info("Interruption detected. Stopping cache '{}'...", cache.getName());
 			return;
 		}
-		LOG.info("Cache cleaner [{}] started", cache.getName());
+		LOG.info("Cache '{}' cleaner thread has started", cache.getName());
 		while (!stop) {
 			LOG.info(String.valueOf(statistics));
 			try {
-				if (flagOutOfMemory.get() != null) {
+				if (!isAboutOutOfMemory()) {
 					TimeUnit.MILLISECONDS.sleep(sleepBeforeDelete);
 				} else {
 					LOG.info("OutOfMemory warning event fired. Clearing cache '{}'...", cache.getName());
@@ -56,35 +79,35 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 								removeElement(entry.getKey(), entry.getValue(), false);
 							}
 						} catch (Exception ex) {
-							LOG.error("Could not remove element '{}'", entry.getKey(), ex);
+							LOG.error("Could not remove element '{}' from cache '{}'", entry.getKey(), cache.getName(), ex);
 						}
 					});
-					LOG.info("Cache '{}' cleared.", cache.getName());
-					flagOutOfMemory = new SoftReference(new Object());
+					LOG.info("Cache '{}' is cleared.", cache.getName());
+					setUpFlagOutOfMemory();
 				}
-				
 			} catch (InterruptedException e) {
 				stop = true;
 				Thread.currentThread().interrupt();
+				LOG.info("Interruption detected. Stopping cache '{}'...", cache.getName());
 				break;
 			}
 			try {
 				removeAllExpired();
 			} catch (Exception ex) {
-				LOG.error("Could not clear cache", ex);
+				LOG.error("Could not clear cache '{}'", cache.getName(), ex);
 			}
 		}
-		LOG.info("Cache cleaner [{}] stopped", cache.getName());
+		LOG.info("Cache '{}' cleaner thread has stopped", cache.getName());
 	});
 	
 	void removeAllExpired() throws Exception {
-		LOG.debug("Running clearing expired elements in cache: {}", cache.getName());
+		LOG.debug("Running clearing expired elements from cache: '{}'", cache.getName());
 		final AtomicInteger count = new AtomicInteger();
 		cache.forEach(entry -> {
 			try {
 				removeElement(entry.getKey(), entry.getValue(), true);
 			} catch (Exception ex) {
-				LOG.error("Could not remove element '{}'", entry.getKey(), ex);
+				LOG.error("Could not remove element '{}' from cache '{}'", entry.getKey(), cache.getName(), ex);
 			}
 			count.incrementAndGet();
 		});
@@ -99,14 +122,15 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		if (veto == null || checkVeto && veto.removeAllowed(key, value.get(key, veto, statistics))) {
 			cache.remove(key);
 			statistics.remove();
-			LOG.trace("Element with key: {} is removed from cache: {}", key, cache.getName());
+			LOG.trace("Element with key: '{}' is removed from cache: '{}'", key, cache.getName());
 		}
 	}
 	
 	public SingleCalculationLatch(CacheProvider<K, SimpleFuture<K, V, E>> cache, ValueProvider<K, V, E> valueProvider) {
 		this.cache = cache;
 		this.valueProvider = valueProvider;
-		cleaner.setName("Cleaner for cache: " + cache.getName());
+		setUpFlagOutOfMemory();
+		cleaner.setName("Cleaner thread for cache: '" + cache.getName() +"'");
 		cleaner.start();
 	}
 	
@@ -119,7 +143,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		}
 		V result = future.get(key, veto, statistics);
 		if (veto != null && !veto.putInCasheAllowed(key, result)) {
-			LOG.debug("Adding '{}' into cache vetoed.", key);
+			LOG.debug("Adding '{}' into cache '{}' vetoed.", key, cache.getName());
 			future.setValue(null);
 		}
 		return result;
@@ -137,9 +161,9 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	
 	public void setVeto(final CachingVeto<K, V> veto) {
 		if (veto == null) {
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Veto cannot be null");
 		}
-		LOG.debug("Vetoing {} is set for cache {}", veto.getClass().getCanonicalName(), cache.getName());
+		LOG.debug("Vetoing {} is set for cache '{}'", veto.getClass().getCanonicalName(), cache.getName());
 		this.veto = veto;
 	}
 	
@@ -147,7 +171,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		if (sleepBeforeDelete <= 0) {
 			return;
 		}
-		LOG.debug("Sleeping period between removing is set to: {} for cache: {}", sleepBeforeDelete, cache.getName());
+		LOG.debug("Sleeping period between removing is set to: {} for cache: '{}'", sleepBeforeDelete, cache.getName());
 		this.sleepBeforeDelete = sleepBeforeDelete;
 	}
 }
