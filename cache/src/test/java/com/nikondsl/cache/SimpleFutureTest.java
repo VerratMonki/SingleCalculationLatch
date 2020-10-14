@@ -42,6 +42,16 @@ public class SimpleFutureTest {
 	}
 	
 	@Test
+	public void testExpiredShouldCallCreate() throws NoOpException {
+		doReturn(true).when(future).isExpired();
+		doReturn(true).when(future).isDone();
+		
+		assertEquals("ABC", future.get("abc", null, statistics));
+		
+		verify(future).constructValue("abc", statistics);
+	}
+	
+	@Test
 	public void testExceptionPreviousExceptionThrown() throws NoOpException {
 		future.setException(new NoOpException());
 		

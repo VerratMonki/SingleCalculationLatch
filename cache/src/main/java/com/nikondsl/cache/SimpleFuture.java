@@ -32,7 +32,7 @@ public class SimpleFuture<K, V, E extends Exception> {
 	 * @return value in cashe if presented or calculates new value and returns it.
 	 * @throws E
 	 */
-	public V get(K key, CachingVeto<K, V> veto, SimpleCacheStatistics statistics) throws E {
+	public V get(K key, CachingVeto<K, V> veto, SimpleCacheStatistics<K, V, E> statistics) throws E {
 		if (key == null) {
 			throw new IllegalArgumentException("Key is required, nulls are not supported.");
 		}
@@ -40,13 +40,13 @@ public class SimpleFuture<K, V, E extends Exception> {
 			throw exception;
 		}
 		if (getInReadLock(key, veto)) {
-			statistics.hit();
+			statistics.hit(key);
 			return value.getValue();
 		}
 		lock.writeLock().lock();
 		try {
 			if (getInReadLock(key, veto)) {
-				statistics.hit();
+				statistics.hit(key);
 				return value.getValue();
 			}
 			constructValue(key, statistics);
@@ -85,10 +85,10 @@ public class SimpleFuture<K, V, E extends Exception> {
 		createdTime = System.currentTimeMillis();
 		try{
 			setValue(valueProvider.createValue(key));
-			statistics.miss();
+			statistics.miss(key);
 		} catch (Exception exception) {
 			this.exception = (E) exception;
-			statistics.error();
+			statistics.error(exception);
 			throw exception;
 		}
 	}

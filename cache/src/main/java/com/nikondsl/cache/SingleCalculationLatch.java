@@ -33,7 +33,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	private CachingVeto<K, V> veto;
 	private volatile boolean stop = false;
 	private volatile long sleepBeforeDelete = DEFAULT_SLEEP_DELETE;
-	private SimpleCacheStatistics statistics = new SimpleCacheStatistics();
+	private SimpleCacheStatistics<K, V, E> statistics = new SimpleCacheStatistics<>();
 	private final AtomicReference<Reference<Object>> flagOutOfMemory = new AtomicReference<>();
 	
 	private void setUpFlagOutOfMemory() {
@@ -121,7 +121,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		}
 		if (veto == null || checkVeto && veto.removeAllowed(key, value.get(key, veto, statistics))) {
 			cache.remove(key);
-			statistics.remove();
+			statistics.remove(key);
 			LOG.trace("Element with key: '{}' is removed from cache: '{}'", key, cache.getName());
 		}
 	}

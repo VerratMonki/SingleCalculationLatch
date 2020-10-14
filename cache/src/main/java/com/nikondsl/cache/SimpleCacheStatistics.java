@@ -2,7 +2,7 @@ package com.nikondsl.cache;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SimpleCacheStatistics {
+public class SimpleCacheStatistics<K, V, E extends Exception> {
 	private AtomicInteger hits = new AtomicInteger();
 	private AtomicInteger misses = new AtomicInteger();
 	private AtomicInteger errors = new AtomicInteger();
@@ -10,19 +10,19 @@ public class SimpleCacheStatistics {
 	private AtomicInteger totalInCache = new AtomicInteger();
 	private AtomicInteger maxHold = new AtomicInteger();
 	
-	public void hit() {
+	public void hit(K key) {
 		hits.incrementAndGet();
 	}
 	
-	public void miss() {
+	public void miss(K key) {
 		misses.incrementAndGet();
 	}
 	
-	public void error() {
+	public void error(E exception) {
 		errors.incrementAndGet();
 	}
 	
-	public void remove() {
+	public void remove(K key) {
 		removes.incrementAndGet();
 	}
 	
