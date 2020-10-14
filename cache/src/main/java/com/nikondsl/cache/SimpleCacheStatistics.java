@@ -18,10 +18,6 @@ public class SimpleCacheStatistics<K, V, E extends Exception> {
 		misses.incrementAndGet();
 	}
 	
-	public void error(E exception) {
-		errors.incrementAndGet();
-	}
-	
 	public void remove(K key) {
 		removes.incrementAndGet();
 	}
@@ -63,5 +59,13 @@ public class SimpleCacheStatistics<K, V, E extends Exception> {
 		return "ratio: "+ratio()+" %, "+getHits()+"/"+getMisses()+"/"+getErrors()+"/"+getRemoves()+"/"+totalInCache.get()+
 				"/"+maxHold.get()+
 				" (hit/miss/error/removed/total/max_hold)";
+	}
+	
+	public void error(E ex, K key, ErrorType remove) {
+		errors.incrementAndGet();
+	}
+	
+	public void error(E exception) {
+		errors.incrementAndGet();
 	}
 }

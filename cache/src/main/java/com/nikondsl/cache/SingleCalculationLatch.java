@@ -11,6 +11,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.nikondsl.cache.ErrorType.REMOVE;
+
 /**
  * com.nikondsl.Main class for providing cache features and latching.  Typical usage will be like below;
  *
@@ -26,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @param <E> class for specifying exception if appears during value creation.
  */
 public class SingleCalculationLatch<K, V, E extends Exception> {
+	private static final String INTERRUPTION_DETECTED_STOPPING_CACHE = "Interruption detected. Stopping cache '{}'...";
 	private static Logger LOG = LoggerFactory.getLogger(SingleCalculationLatch.class);
 	private static long DEFAULT_SLEEP_DELETE = 30_000L;
 	
@@ -63,7 +66,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		} catch (InterruptedException e) {
 			stop = true;
 			Thread.currentThread().interrupt();
-			LOG.info("Interruption detected. Stopping cache '{}'...", cache.getName());
+			LOG.info(INTERRUPTION_DETECTED_STOPPING_CACHE, cache.getName());
 			return;
 		}
 		LOG.info("Cache '{}' cleaner thread has started", cache.getName());
@@ -82,6 +85,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 							}
 						} catch (Exception ex) {
 							LOG.error("Could not remove element '{}' from cache '{}'", entry.getKey(), cache.getName(), ex);
+							statistics.error((E) ex, entry.getKey(), REMOVE);
 						}
 					});
 					LOG.info("Cache '{}' is cleared.", cache.getName());
@@ -90,19 +94,15 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 			} catch (InterruptedException e) {
 				stop = true;
 				Thread.currentThread().interrupt();
-				LOG.info("Interruption detected. Stopping cache '{}'...", cache.getName());
+				LOG.info(INTERRUPTION_DETECTED_STOPPING_CACHE, cache.getName());
 				break;
 			}
-			try {
-				removeAllExpired();
-			} catch (Exception ex) {
-				LOG.error("Could not clear cache '{}'", cache.getName(), ex);
-			}
+			removeAllExpired();
 		}
 		LOG.info("Cache '{}' cleaner thread has stopped", cache.getName());
 	});
 	
-	void removeAllExpired() throws E {
+	void removeAllExpired() {
 		LOG.debug("Running clearing expired elements from cache: '{}'", cache.getName());
 		final AtomicInteger count = new AtomicInteger();
 		cache.forEach(entry -> {
@@ -110,7 +110,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 				removeElement(entry.getKey(), entry.getValue(), true);
 			} catch (Exception ex) {
 				LOG.error("Could not remove element '{}' from cache '{}'", entry.getKey(), cache.getName(), ex);
-				statistics.error((E) ex);
+				statistics.error((E) ex, entry.getKey(), REMOVE);
 			}
 			count.incrementAndGet();
 		});

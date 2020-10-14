@@ -2,6 +2,8 @@ package com.nikondsl.cache;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static com.nikondsl.cache.ErrorType.CREATE;
+
 /**
  * Cache will use this future for managing creating values.
  * @param <K> class for specifying key.
@@ -88,7 +90,7 @@ public class SimpleFuture<K, V, E extends Exception> {
 			statistics.miss(key);
 		} catch (Exception exception) {
 			this.exception = (E) exception;
-			statistics.error(exception);
+			statistics.error(exception, key, CREATE);
 			throw exception;
 		}
 	}
