@@ -102,7 +102,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		LOG.info("Cache '{}' cleaner thread has stopped", cache.getName());
 	});
 	
-	void removeAllExpired() throws Exception {
+	void removeAllExpired() throws E {
 		LOG.debug("Running clearing expired elements from cache: '{}'", cache.getName());
 		final AtomicInteger count = new AtomicInteger();
 		cache.forEach(entry -> {
@@ -110,6 +110,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 				removeElement(entry.getKey(), entry.getValue(), true);
 			} catch (Exception ex) {
 				LOG.error("Could not remove element '{}' from cache '{}'", entry.getKey(), cache.getName(), ex);
+				statistics.error((E) ex);
 			}
 			count.incrementAndGet();
 		});
