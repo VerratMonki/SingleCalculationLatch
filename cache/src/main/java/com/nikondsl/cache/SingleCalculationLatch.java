@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Main class for providing cache features and latching.  Typical usage will be like below;
+ * com.nikondsl.Main class for providing cache features and latching.  Typical usage will be like below;
  *
  * CacheProvider cacheProvider = ...
  * ValueProvider valueProvider = ...
@@ -165,7 +165,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	public void stop() {
 		this.stop = true;
 		cleaner.interrupt();
-		LOG.error("Final cache '{}' ratio: {} %, {}/{}/{}/{} (hit/miss/error/removed)",
+		LOG.info("Final cache '{}' ratio: {} %, {}/{}/{}/{} (hit/miss/error/removed)",
 				cache.getName(),
 				statistics.ratio(),
 				statistics.getHits(), statistics.getMisses(), statistics.getErrors(),

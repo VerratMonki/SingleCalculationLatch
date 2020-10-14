@@ -1,3 +1,5 @@
+package com.nikondsl;
+
 import com.nikondsl.cache.CacheProvider;
 import com.nikondsl.cache.ReferenceType;
 import com.nikondsl.cache.SimpleFuture;
@@ -5,18 +7,12 @@ import com.nikondsl.cache.SingleCalculationLatch;
 import com.nikondsl.cache.ValueProvider;
 import org.ehcache.Cache;
 
-import java.security.SecureRandom;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class Main {

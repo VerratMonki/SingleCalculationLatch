@@ -1,3 +1,5 @@
+package com.nikondsl;
+
 import java.security.SecureRandom;
 
 public class SyncRandom {
