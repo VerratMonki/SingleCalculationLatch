@@ -27,6 +27,7 @@ import static com.nikondsl.cache.ErrorType.REMOVE;
  * @param <V> class for specifying values.
  * @param <E> class for specifying exception if appears during value creation.
  */
+@ApiReference(since ="1.0.0")
 public class SingleCalculationLatch<K, V, E extends Exception> {
 	private static final String INTERRUPTION_DETECTED_STOPPING_CACHE = "Interruption detected. Stopping cache '{}'...";
 	private static Logger LOG = LoggerFactory.getLogger(SingleCalculationLatch.class);
@@ -129,11 +130,13 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		}
 	}
 	
+	@ApiReference(since ="1.0.0")
 	public SingleCalculationLatch(CacheProvider<K, SimpleFuture<K, V, E>> cache,
 								  ValueProvider<K, V, E> valueProvider) {
 		this(cache, valueProvider, new SimpleCacheStatistics<K, V, E>());
 	}
 	
+	@ApiReference(since ="1.0.1")
 	public SingleCalculationLatch(CacheProvider<K, SimpleFuture<K, V, E>> cache,
 								  ValueProvider<K, V, E> valueProvider,
 								  SimpleCacheStatistics<K, V, E> statistics) {
@@ -148,6 +151,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		this.statistics = statistics;
 	}
 	
+	@ApiReference(since ="1.0.0")
 	public V get(K key) throws E {
 		SimpleFuture<K, V, E> newFuture = new SimpleFuture<> (valueProvider);
 		SimpleFuture<K, V, E> future = cache.putIfAbsent(key, newFuture);
@@ -163,6 +167,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		return result;
 	}
 	
+	@ApiReference(since ="1.0.0")
 	public void stop() {
 		this.stop = true;
 		cleaner.interrupt();
@@ -173,6 +178,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 				statistics.getRemoves());
 	}
 	
+	@ApiReference(since ="1.0.0")
 	public void setVeto(final CachingVeto<K, V> veto) {
 		if (veto == null) {
 			throw new IllegalArgumentException("Veto cannot be null");
@@ -181,6 +187,7 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		this.veto = veto;
 	}
 	
+	@ApiReference(since ="1.0.0")
 	public void setSleepBeforeDelete(final long sleepBeforeDelete) {
 		if (sleepBeforeDelete <= 0) {
 			return;

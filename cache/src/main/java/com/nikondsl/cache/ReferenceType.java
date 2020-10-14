@@ -7,6 +7,7 @@ package com.nikondsl.cache;
  * in heap and will behave as usual (STRONG) references. WEAK references type means that values
  * will be removed from heap just before minor GC collector routine.
  */
+@ApiReference(since ="1.0.0")
 public enum ReferenceType {
 	STRONG, //usual java references
 	SOFT, //soft references as value holders, used by default

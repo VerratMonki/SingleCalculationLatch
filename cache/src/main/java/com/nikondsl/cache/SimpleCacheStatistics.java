@@ -2,7 +2,8 @@ package com.nikondsl.cache;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SimpleCacheStatistics<K, V, E extends Exception> {
+@ApiReference(since ="1.0.0")
+public class SimpleCacheStatistics<K, V, E extends Exception> implements CacheStatistics<K, E> {
 	private AtomicInteger hits = new AtomicInteger();
 	private AtomicInteger misses = new AtomicInteger();
 	private AtomicInteger errors = new AtomicInteger();
@@ -10,14 +11,20 @@ public class SimpleCacheStatistics<K, V, E extends Exception> {
 	private AtomicInteger totalInCache = new AtomicInteger();
 	private AtomicInteger maxHold = new AtomicInteger();
 	
+	@Override
+	@ApiReference(since ="1.0.0")
 	public void hit(K key) {
 		hits.incrementAndGet();
 	}
 	
+	@Override
+	@ApiReference(since ="1.0.0")
 	public void miss(K key) {
 		misses.incrementAndGet();
 	}
 	
+	@Override
+	@ApiReference(since ="1.0.0")
 	public void remove(K key) {
 		removes.incrementAndGet();
 	}
@@ -55,17 +62,16 @@ public class SimpleCacheStatistics<K, V, E extends Exception> {
 	}
 	
 	@Override
+	@ApiReference(since ="1.0.0")
 	public String toString() {
 		return "ratio: "+ratio()+" %, "+getHits()+"/"+getMisses()+"/"+getErrors()+"/"+getRemoves()+"/"+totalInCache.get()+
 				"/"+maxHold.get()+
 				" (hit/miss/error/removed/total/max_hold)";
 	}
 	
+	@Override
+	@ApiReference(since ="1.0.0")
 	public void error(E ex, K key, ErrorType remove) {
-		errors.incrementAndGet();
-	}
-	
-	public void error(E exception) {
 		errors.incrementAndGet();
 	}
 }

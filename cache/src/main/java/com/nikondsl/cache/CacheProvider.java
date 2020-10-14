@@ -13,12 +13,13 @@ import java.util.function.Consumer;
  * @param <K> class for keys, instances should follow the usual rules for hashCode/equals methods.
  * @param <V> class for values
  */
-
+@ApiReference(since ="1.0.0")
 public interface CacheProvider<K, V> {
 	/**
 	 * Returns name for cache.
 	 * @return string with cache name.
 	 */
+	@ApiReference(since ="1.0.0")
 	String getName();
 	
 	/**
@@ -26,6 +27,7 @@ public interface CacheProvider<K, V> {
 	 * @param key which is used as a cache key.
 	 * @return value which will be used as a cache value.
 	 */
+	@ApiReference(since ="1.0.0")
 	V get(K key);
 	
 	/**
@@ -33,6 +35,7 @@ public interface CacheProvider<K, V> {
 	 * @param key which is used as a cache key.
 	 * @param value which is stored in a cache. If there is no value in cache it returns null.
 	 */
+	@ApiReference(since ="1.0.0")
 	default void put(K key, V value) {
 		putIfAbsent(key, value);
 	}
@@ -43,6 +46,7 @@ public interface CacheProvider<K, V> {
 	 * @param value which will be stored in a cache.
 	 * @return old value if any in cache.
 	 */
+	@ApiReference(since ="1.0.0")
 	V putIfAbsent(K key, V value);
 	
 	/**
@@ -50,11 +54,13 @@ public interface CacheProvider<K, V> {
 	 * @param key which is used as a cache key.
 	 * @return value which was stored before deletion, if any.
 	 */
+	@ApiReference(since ="1.0.0")
 	V remove(K key);
 	
 	/**
 	 * Returns all entries which are stored in cache for further deletion.
 	 * @return entries in cache.
 	 */
+	@ApiReference(since ="1.0.0")
 	void forEach(Consumer<Cache.Entry<K, V>> consumer);
 }

@@ -6,6 +6,7 @@ package com.nikondsl.cache;
  * @param <K> class for key in cache.
  * @param <V> class for value in cache.
  */
+@ApiReference(since ="1.0.0")
 public interface CachingVeto<K, V> {
 	
 	/**
@@ -14,6 +15,7 @@ public interface CachingVeto<K, V> {
 	 * @param value
 	 * @return true only if this key,value pair is allowed to be removed.
 	 */
+	@ApiReference(since ="1.0.0")
 	default boolean removeAllowed(K key, V value) {
 		return true;
 	}
@@ -24,6 +26,7 @@ public interface CachingVeto<K, V> {
 	 * @param value
 	 * @return true only if this key,value pair is allowed to be expired.
 	 */
+	@ApiReference(since ="1.0.0")
 	default boolean expireAllowed(K key, V value) {
 		return true;
 	}
@@ -34,6 +37,7 @@ public interface CachingVeto<K, V> {
 	 * @param value
 	 * @return true only if putting enabled.
 	 */
+	@ApiReference(since ="1.0.0")
 	default boolean putInCasheAllowed(K key, V value) {
 		return true;
 	}

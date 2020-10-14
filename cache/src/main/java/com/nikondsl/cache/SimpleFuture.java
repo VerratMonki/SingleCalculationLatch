@@ -10,6 +10,7 @@ import static com.nikondsl.cache.ErrorType.CREATE;
  * @param <V> class for specifying value.
  * @param <E> class for specifying exception.
  */
+@ApiReference(since ="1.0.0")
 public class SimpleFuture<K, V, E extends Exception> {
 	private volatile long createdTime = System.currentTimeMillis();
 	private volatile Reference<V> value;
@@ -34,6 +35,7 @@ public class SimpleFuture<K, V, E extends Exception> {
 	 * @return value in cashe if presented or calculates new value and returns it.
 	 * @throws E
 	 */
+	@ApiReference(since ="1.0.0")
 	public V get(K key, CachingVeto<K, V> veto, SimpleCacheStatistics<K, V, E> statistics) throws E {
 		if (key == null) {
 			throw new IllegalArgumentException("Key is required, nulls are not supported.");
@@ -73,6 +75,7 @@ public class SimpleFuture<K, V, E extends Exception> {
 		return false;
 	}
 	
+	@ApiReference(since ="1.0.0")
 	public boolean isDone() {
 		return done;
 	}
@@ -83,6 +86,7 @@ public class SimpleFuture<K, V, E extends Exception> {
 	 * @param statistics
 	 * @throws E if any exception occurs.
 	 */
+	@ApiReference(since ="1.0.0")
 	void constructValue(K key, SimpleCacheStatistics statistics) throws E {
 		createdTime = System.currentTimeMillis();
 		try{
@@ -95,6 +99,7 @@ public class SimpleFuture<K, V, E extends Exception> {
 		}
 	}
 	
+	@ApiReference(since ="1.0.0")
 	public boolean isExpired() {
 		if (isDone() || exception != null) {
 			long remain = System.currentTimeMillis() - createdTime;
