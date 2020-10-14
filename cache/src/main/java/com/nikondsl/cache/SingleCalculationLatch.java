@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.ref.Reference;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,10 +31,11 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 	
 	private CacheProvider<K, SimpleFuture<K, V, E>> cache;
 	private ValueProvider<K, V, E> valueProvider;
-	private CachingVeto<K, V> veto;
+	private SimpleCacheStatistics<K, V, E> statistics;
+	private volatile CachingVeto<K, V> veto;
+	
 	private volatile boolean stop = false;
 	private volatile long sleepBeforeDelete = DEFAULT_SLEEP_DELETE;
-	private SimpleCacheStatistics<K, V, E> statistics = new SimpleCacheStatistics<>();
 	private final AtomicReference<Reference<Object>> flagOutOfMemory = new AtomicReference<>();
 	
 	private void setUpFlagOutOfMemory() {
@@ -126,12 +128,23 @@ public class SingleCalculationLatch<K, V, E extends Exception> {
 		}
 	}
 	
-	public SingleCalculationLatch(CacheProvider<K, SimpleFuture<K, V, E>> cache, ValueProvider<K, V, E> valueProvider) {
+	public SingleCalculationLatch(CacheProvider<K, SimpleFuture<K, V, E>> cache,
+								  ValueProvider<K, V, E> valueProvider) {
+		this(cache, valueProvider, new SimpleCacheStatistics<K, V, E>());
+	}
+	
+	public SingleCalculationLatch(CacheProvider<K, SimpleFuture<K, V, E>> cache,
+								  ValueProvider<K, V, E> valueProvider,
+								  SimpleCacheStatistics<K, V, E> statistics) {
+		Objects.requireNonNull(cache,"Cache should be provided");
+		Objects.requireNonNull(valueProvider,"ValueProvider should be provided");
+		Objects.requireNonNull(statistics,"Statistics should be provided");
 		this.cache = cache;
 		this.valueProvider = valueProvider;
 		setUpFlagOutOfMemory();
 		cleaner.setName("Cleaner thread for cache: '" + cache.getName() +"'");
 		cleaner.start();
+		this.statistics = statistics;
 	}
 	
 	public V get(K key) throws E {

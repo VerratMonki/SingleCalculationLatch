@@ -57,23 +57,17 @@ public class Main {
     
         @Override
         public void forEach(Consumer<Cache.Entry<String, SimpleFuture<String, Holder, Exception>>> consumer) {
-            cache.forEach(new BiConsumer<String, SimpleFuture<String, Holder, Exception>>() {
+            cache.forEach((key, value) -> consumer.accept(new Cache.Entry<String, SimpleFuture<String, Holder, Exception>>() {
                 @Override
-                public void accept(String key, SimpleFuture<String, Holder, Exception> value) {
-                    consumer.accept(new Cache.Entry<String, SimpleFuture<String, Holder, Exception>>() {
-                        @Override
-                        public String getKey() {
-                            return key;
-                        }
-    
-                        @Override
-                        public SimpleFuture<String, Holder, Exception> getValue() {
-                            return value;
-                        }
-                    });
-        
+                public String getKey() {
+                    return key;
                 }
-            });
+
+                @Override
+                public SimpleFuture<String, Holder, Exception> getValue() {
+                    return value;
+                }
+            }));
         }
     };
     
