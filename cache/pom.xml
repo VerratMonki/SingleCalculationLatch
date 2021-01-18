@@ -8,7 +8,7 @@
     <artifactId>cache</artifactId>
     <version>1.0.1</version>
     <packaging>jar</packaging>
-    <name>Single calculation latch &amp; cache</name>
+    <name>Single calculation latch &amp;amp; cache</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -22,9 +22,18 @@
         <junit-platform-surefire-provider.version>1.0.1</junit-platform-surefire-provider.version>
         <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
         <ehcache.version>3.9.0</ehcache.version>
+
+        <auto-service.version>1.0-rc2</auto-service.version>
+
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>com.google.auto.service</groupId>
+            <artifactId>auto-service</artifactId>
+            <version>${auto-service.version}</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- building/working dependencies -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -120,8 +129,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven-compiler-plugin.version}</version>
                 <configuration>
-                    <source>8</source>
-                    <target>8</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
             </plugin>
         </plugins>
